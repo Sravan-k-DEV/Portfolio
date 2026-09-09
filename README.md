@@ -1,36 +1,80 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Sravan Kumar Yadav Gangi — Portfolio
 
-## Getting Started
+Personal portfolio for **Sravan Kumar**, AI/ML Engineer. Built with Next.js App Router.
 
-First, run the development server:
+**Live focus:** production AI systems, projects, certificates, Medium writing, and contact.
+
+## Stack
+
+- Next.js (App Router) + TypeScript + React
+- Tailwind CSS
+- Lucide React
+- Zod + Resend (contact form)
+- Medium RSS with static fallback (blogs)
+- Deploy target: Vercel
+
+## Getting started
 
 ```bash
+npm install
+cp .env.example .env.local
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Environment variables
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Copy `.env.example` → `.env.local` (local) and set the same keys in **Vercel → Project → Settings → Environment Variables** for production.
 
-## Learn More
+| Variable | Purpose |
+|----------|---------|
+| `NEXT_PUBLIC_SITE_URL` | Canonical site URL (use your production domain on Vercel) |
+| `RESEND_API_KEY` | Resend API key for the contact form (**secret — never commit**) |
+| `CONTACT_TO_EMAIL` | Inbox that receives contact messages |
+| `CONTACT_FROM_EMAIL` | Resend “from” address (use a verified domain in production) |
+| `MEDIUM_USERNAME` | Medium username without `@` (e.g. `sravankumaryadav`) |
 
-To learn more about Next.js, take a look at the following resources:
+- Without `RESEND_API_KEY`, contact returns a configuration error.
+- Without `MEDIUM_USERNAME`, blogs fall back to `src/content/blogs.ts`.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+`.env.local` is gitignored. Do not commit real keys.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Scripts
+
+- `npm run dev` — development server
+- `npm run build` — production build
+- `npm run start` — serve production build
+- `npm run lint` — ESLint
+- `npm run format` — Prettier
+
+## Project layout
+
+| Path | Purpose |
+|------|---------|
+| `src/app` | Routes (home, projects, blogs, API) |
+| `src/components` | UI (home sections, layout, projects, blogs) |
+| `src/content` | Editable copy (about, experience, skills, projects, blogs, certificates) |
+| `src/config` | Site, nav, social config |
+| `src/services` | Medium RSS + Resend email |
+| `public/resume` | Downloadable resume PDF |
+| `public/images` | Profile and static images |
+
+## Content edits
+
+Most site text lives under `src/content/` and `src/config/site.ts`.  
+Replace `public/resume/resume.pdf` when you update your resume.
 
 ## Deploy on Vercel
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+1. Push this repo to GitHub (or import the folder in Vercel).
+2. Set the environment variables above in the Vercel project (Production).
+3. Set `NEXT_PUBLIC_SITE_URL` to your live domain (e.g. `https://your-domain.com`).
+4. Deploy. Framework preset: Next.js.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Optional: `Screen 1`–`Screen 4` folders (if present) are design prototypes only and are not part of the production app.
+
+## Security notes
+
+- Keep `RESEND_API_KEY` only in `.env.local` / Vercel env — never in source or README.
+- Prefer a verified custom domain for `CONTACT_FROM_EMAIL` in production (not only `onboarding@resend.dev`).
