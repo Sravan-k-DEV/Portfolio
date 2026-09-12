@@ -4,6 +4,7 @@ import { blogsPage } from "@/content/blogs";
 import { getBlogPosts } from "@/services/medium/medium.service";
 import { Section, SectionHeading } from "@/components/ui/Section";
 import { BlogCard } from "@/components/blogs/BlogCard";
+import { Reveal } from "@/components/ui/Reveal";
 
 export async function FeaturedBlogs() {
   const { posts } = await getBlogPosts();
@@ -27,8 +28,10 @@ export async function FeaturedBlogs() {
         </Link>
       </div>
       <div className="grid gap-6 md:grid-cols-3">
-        {featured.map((post) => (
-          <BlogCard key={post.slug} post={post} compact />
+        {featured.map((post, index) => (
+          <Reveal key={post.slug} delay={index * 80}>
+            <BlogCard post={post} compact />
+          </Reveal>
         ))}
       </div>
     </Section>

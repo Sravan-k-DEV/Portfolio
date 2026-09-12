@@ -1,6 +1,7 @@
 import Image from "next/image";
 import { heroContent } from "@/config/site";
 import { Container } from "@/components/ui/Container";
+import { WordReveal } from "@/components/ui/Reveal";
 
 export function Hero() {
   return (
@@ -10,11 +11,13 @@ export function Hero() {
     >
       <Container>
         <div className="grid items-start gap-8 md:grid-cols-2 md:gap-10 lg:gap-14">
-          <div className="animate-fade-up flex flex-col gap-5 md:gap-6">
+          <div className="flex flex-col gap-5 md:gap-6">
             <span className="text-eyebrow">{heroContent.eyebrow}</span>
-            <h1 className="font-serif text-4xl font-semibold leading-[1.1] md:text-[2.75rem] lg:text-5xl">
-              {heroContent.headline}
-            </h1>
+            <WordReveal
+              as="h1"
+              text={heroContent.headline}
+              className="font-serif text-4xl font-semibold leading-[1.2] md:text-[2.75rem] lg:text-5xl"
+            />
             <p className="max-w-[52ch] text-base leading-relaxed text-foreground/70">
               {heroContent.body}
             </p>
@@ -32,15 +35,15 @@ export function Hero() {
             </div>
           </div>
 
-          {/* Portrait: 1:1 square — matches source photo */}
-          <div className="animate-fade-in relative mx-auto aspect-square w-full max-w-[22rem] overflow-hidden rounded-2xl border border-border shadow-sm lg:max-w-md">
+          <div className="hover-pop relative mx-auto aspect-square w-full max-w-[22rem] overflow-hidden rounded-2xl border border-border shadow-sm lg:max-w-md">
             <Image
               src={heroContent.portrait.src}
               alt={heroContent.portrait.alt}
               fill
-              priority
+              loading="eager"
+              fetchPriority="high"
               quality={95}
-              className="object-cover object-center"
+              className="object-cover object-center transition-transform duration-700 ease-out hover:scale-[1.04]"
               sizes="(max-width: 768px) 100vw, (max-width: 1280px) 45vw, 560px"
             />
           </div>

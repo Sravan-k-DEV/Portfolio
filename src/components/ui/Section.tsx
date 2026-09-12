@@ -1,6 +1,7 @@
 import { cn } from "@/lib/utils";
 import type { ReactNode } from "react";
 import { Container } from "./Container";
+import { WordReveal } from "./Reveal";
 
 export function Section({
   id,
@@ -38,9 +39,11 @@ export function SectionHeading({
   return (
     <div className={cn("mb-10 max-w-3xl", className)}>
       {eyebrow ? <p className="text-eyebrow mb-3">{eyebrow}</p> : null}
-      <h2 className="font-serif text-3xl font-semibold tracking-tight md:text-4xl">
-        {title}
-      </h2>
+      <WordReveal
+        as="h2"
+        text={title}
+        className="font-serif text-3xl font-semibold leading-[1.2] md:text-4xl"
+      />
       {subtitle ? (
         <p className="mt-3 text-base text-foreground/70 md:text-lg">{subtitle}</p>
       ) : null}

@@ -5,6 +5,7 @@ import type { BlogPost } from "@/types/blog";
 import { BlogCard } from "./BlogCard";
 import { collectUniqueTags, formatMediumTagLabel, normalizeTag } from "@/lib/tags";
 import { cn } from "@/lib/utils";
+import { Reveal } from "@/components/ui/Reveal";
 
 export function BlogGrid({
   posts,
@@ -54,8 +55,10 @@ export function BlogGrid({
         ))}
       </div>
       <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        {visible.map((post) => (
-          <BlogCard key={post.slug} post={post} />
+        {visible.map((post, index) => (
+          <Reveal key={post.slug} delay={index * 70}>
+            <BlogCard post={post} />
+          </Reveal>
         ))}
       </div>
       {visible.length === 0 ? (

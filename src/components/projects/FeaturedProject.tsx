@@ -3,17 +3,25 @@ import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import type { Project } from "@/types/project";
 
-export function FeaturedProject({ project }: { project: Project }) {
+export function FeaturedProject({
+  project,
+  priority = false,
+}: {
+  project: Project;
+  priority?: boolean;
+}) {
   return (
-    <article className="overflow-hidden rounded-2xl bg-featured text-featured-foreground">
-      <Link href={`/projects/${project.slug}`} className="grid md:grid-cols-2">
+    <article className="hover-pop overflow-hidden rounded-2xl bg-featured text-featured-foreground">
+      <Link href={`/projects/${project.slug}`} className="group grid md:grid-cols-2">
         <div className="relative min-h-56">
           <Image
             src={project.coverImage}
             alt={project.coverAlt}
             fill
-            className="object-cover"
+            className="object-cover transition-transform duration-700 ease-out group-hover:scale-[1.06]"
             sizes="(max-width: 768px) 100vw, 50vw"
+            loading={priority ? "eager" : "lazy"}
+            fetchPriority={priority ? "high" : "auto"}
           />
         </div>
         <div className="flex flex-col justify-center gap-4 p-8">

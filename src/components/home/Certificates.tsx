@@ -20,7 +20,7 @@ export function Certificates() {
             href={cert.href}
             target="_blank"
             rel="noreferrer"
-            className="group rounded-2xl border border-border bg-card p-6 transition-transform hover:-translate-y-0.5"
+            className="hover-pop group rounded-2xl border border-border bg-card p-6"
           >
             <p className="text-xs uppercase tracking-[0.15em] text-primary">
               {cert.issuer} · {cert.year}

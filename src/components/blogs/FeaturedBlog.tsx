@@ -5,21 +5,22 @@ import { blogsPage } from "@/content/blogs";
 
 export function FeaturedBlog({ post }: { post: BlogPost }) {
   return (
-    <article className="overflow-hidden rounded-2xl border border-border bg-card">
+    <article className="hover-pop overflow-hidden rounded-2xl border border-border bg-card">
       <a
         href={post.mediumUrl}
         target="_blank"
         rel="noreferrer"
-        className="grid md:grid-cols-2"
+        className="group grid md:grid-cols-2"
       >
         <div className="relative min-h-64">
           <Image
             src={post.coverImage}
             alt={post.coverAlt}
             fill
-            className="object-cover"
+            className="object-cover transition-transform duration-700 ease-out group-hover:scale-[1.06]"
             sizes="(max-width: 768px) 100vw, 50vw"
-            priority
+            loading="eager"
+            fetchPriority="high"
           />
         </div>
         <div className="flex flex-col justify-center gap-4 p-8">

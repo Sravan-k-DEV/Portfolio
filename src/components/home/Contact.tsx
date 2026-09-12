@@ -171,7 +171,7 @@ export function Contact() {
                   target="_blank"
                   rel="noreferrer"
                   aria-label="LinkedIn"
-                  className="inline-flex size-10 items-center justify-center rounded-full border border-border text-foreground transition-colors hover:border-sage hover:text-primary"
+                  className="hover-pop inline-flex size-10 items-center justify-center rounded-full border border-border text-foreground hover:border-sage hover:text-primary"
                 >
                   <LinkedInIcon className="size-4" />
                 </a>
@@ -182,7 +182,7 @@ export function Contact() {
                   target="_blank"
                   rel="noreferrer"
                   aria-label="Medium"
-                  className="inline-flex size-10 items-center justify-center rounded-full border border-border text-foreground transition-colors hover:border-sage hover:text-primary"
+                  className="hover-pop inline-flex size-10 items-center justify-center rounded-full border border-border text-foreground hover:border-sage hover:text-primary"
                 >
                   <MediumIcon className="size-4" />
                 </a>
@@ -193,7 +193,7 @@ export function Contact() {
                   target="_blank"
                   rel="noreferrer"
                   aria-label="GitHub"
-                  className="inline-flex size-10 items-center justify-center rounded-full border border-border text-foreground transition-colors hover:border-sage hover:text-primary"
+                  className="hover-pop inline-flex size-10 items-center justify-center rounded-full border border-border text-foreground hover:border-sage hover:text-primary"
                 >
                   <GitHubIcon className="size-4" />
                 </a>
@@ -203,7 +203,7 @@ export function Contact() {
             <a
               href={siteConfig.resumePath}
               download
-              className="inline-flex h-10 items-center rounded-lg border border-sage px-6 text-sm"
+              className="hover-pop inline-flex h-10 items-center rounded-lg border border-sage px-6 text-sm"
             >
               Download Resume
             </a>

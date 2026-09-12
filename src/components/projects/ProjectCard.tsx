@@ -14,7 +14,7 @@ export function ProjectCard({
   return (
     <article
       className={cn(
-        "group overflow-hidden rounded-2xl border border-border bg-card transition-transform hover:-translate-y-0.5",
+        "hover-pop group overflow-hidden rounded-2xl border border-border bg-card",
         className,
       )}
     >
@@ -24,7 +24,7 @@ export function ProjectCard({
             src={project.coverImage}
             alt={project.coverAlt}
             fill
-            className="object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+            className="object-cover transition-transform duration-700 ease-out group-hover:scale-[1.08]"
             sizes="(max-width: 768px) 100vw, 33vw"
           />
         </div>

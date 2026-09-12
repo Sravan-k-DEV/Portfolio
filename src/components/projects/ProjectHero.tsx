@@ -54,7 +54,8 @@ export function ProjectHero({ project }: { project: Project }) {
               src={project.coverImage}
               alt={project.coverAlt}
               fill
-              priority
+              loading="eager"
+              fetchPriority="high"
               className="object-cover"
               sizes="(max-width: 1024px) 100vw, 480px"
             />

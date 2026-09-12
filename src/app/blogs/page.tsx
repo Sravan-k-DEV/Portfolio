@@ -5,6 +5,7 @@ import { buildMetadata } from "@/lib/metadata";
 import { Container } from "@/components/ui/Container";
 import { FeaturedBlog } from "@/components/blogs/FeaturedBlog";
 import { BlogGrid } from "@/components/blogs/BlogGrid";
+import { Reveal, WordReveal } from "@/components/ui/Reveal";
 
 export const metadata: Metadata = buildMetadata({
   title: "Blogs",
@@ -21,12 +22,16 @@ export default async function BlogsPage() {
     <div className="pb-20 pt-28">
       <Container>
         <p className="text-eyebrow">{blogsPage.pageEyebrow}</p>
-        <h1 className="mt-3 font-serif text-4xl font-semibold md:text-5xl">
-          {blogsPage.pageHeading}
-        </h1>
-        <p className="mt-4 max-w-3xl text-base text-foreground/70">
-          {blogsPage.pageIntro}
-        </p>
+        <WordReveal
+          as="h1"
+          text={blogsPage.pageHeading}
+          className="mt-3 font-serif text-4xl font-semibold leading-[1.2] md:text-5xl"
+        />
+        <Reveal>
+          <p className="mt-4 max-w-3xl text-base text-foreground/70">
+            {blogsPage.pageIntro}
+          </p>
+        </Reveal>
         {source === "medium" ? (
           <p className="mt-2 text-xs text-foreground/50">
             Synced from Medium · Substack
@@ -35,7 +40,9 @@ export default async function BlogsPage() {
 
         {featured ? (
           <section className="mt-14">
-            <FeaturedBlog post={featured} />
+            <Reveal>
+              <FeaturedBlog post={featured} />
+            </Reveal>
           </section>
         ) : null}
 

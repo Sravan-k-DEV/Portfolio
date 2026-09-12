@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/Button";
+import { ConfusedBot } from "@/components/ui/ConfusedBot";
 
 export default function Error({
   error,
@@ -16,8 +17,9 @@ export default function Error({
   }, [error]);
 
   return (
-    <div className="flex min-h-[60vh] flex-col items-center justify-center px-6 pt-28 text-center">
-      <p className="text-eyebrow">Something went wrong</p>
+    <div className="flex min-h-[70vh] flex-col items-center justify-center px-6 pt-24 pb-16 text-center">
+      <ConfusedBot className="h-44 w-auto text-foreground md:h-56" />
+      <p className="text-eyebrow mt-2">Something went wrong</p>
       <h1 className="mt-3 font-serif text-3xl font-semibold">
         We hit an unexpected error
       </h1>
@@ -25,12 +27,12 @@ export default function Error({
         Try again, or head back home while we sort this out.
       </p>
       <div className="mt-8 flex gap-3">
-        <Button type="button" onClick={reset}>
+        <Button type="button" className="hover-pop" onClick={reset}>
           Try again
         </Button>
         <Link
           href="/"
-          className="inline-flex h-10 items-center rounded-lg border border-sage px-6 text-sm"
+          className="hover-pop inline-flex h-10 items-center rounded-lg border border-sage px-6 text-sm"
         >
           Go home
         </Link>

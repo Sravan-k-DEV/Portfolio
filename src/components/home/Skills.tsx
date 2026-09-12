@@ -35,7 +35,7 @@ export function Skills() {
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)] lg:gap-5">
         <div
           key={featured.id}
-          className="animate-fade-in rounded-2xl border border-sage/40 bg-card p-6 md:p-8"
+          className="hover-pop animate-fade-in rounded-2xl border border-sage/40 bg-card p-6 md:p-8"
           aria-live="polite"
         >
           <p className="text-eyebrow">Core practice</p>
@@ -49,7 +49,7 @@ export function Skills() {
             {featured.skills.map((skill) => (
               <span
                 key={skill}
-                className="rounded-full bg-mist/40 px-3 py-1.5 text-xs text-foreground dark:bg-mist/20 md:text-sm"
+                className="rounded-full bg-mist/40 px-3 py-1.5 text-xs text-foreground transition-transform duration-200 hover:scale-105 dark:bg-mist/20 md:text-sm"
               >
                 {skill}
               </span>
@@ -69,7 +69,7 @@ export function Skills() {
                 onClick={() => setActiveId(category.id)}
                 aria-label={`Show ${category.name} skills`}
                 className={cn(
-                  "animate-fade-up group rounded-2xl border border-border bg-card p-4 text-left transition-colors duration-200",
+                  "hover-pop group rounded-2xl border border-border bg-card p-4 text-left",
                   "hover:border-sage/50 focus-visible:border-sage",
                   "md:p-5",
                 )}
