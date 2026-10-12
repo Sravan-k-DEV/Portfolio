@@ -143,7 +143,7 @@ export function Navbar() {
 
         <div className="flex items-center gap-2 sm:gap-3">
           <NavSocialLinks className="hidden sm:flex" />
-          <ThemeToggle className="hidden sm:inline-flex" />
+          <ThemeToggle />
           <button
             type="button"
             className="inline-flex rounded-md p-2 text-foreground lg:hidden"

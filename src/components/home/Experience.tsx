@@ -3,18 +3,23 @@
 import {
   useCallback,
   useEffect,
+  useLayoutEffect,
   useRef,
   useState,
   type KeyboardEvent,
-  type PointerEvent,
 } from "react";
 import { experience, experienceSection } from "@/content/experience";
 import { Section, SectionHeading } from "@/components/ui/Section";
-import { Reveal } from "@/components/ui/Reveal";
 import { cn } from "@/lib/utils";
 
-const SNAP_MS = 220;
-const WHEEL_SCALE = 720;
+/** Sticky offset below the fixed navbar (`top-20`). */
+const STICKY_TOP_PX = 80;
+/** Fraction of the sticky lifetime used for stop scrubbing; rest is a soft release. */
+const HOLD_END = 0.9;
+/** Scroll distance per stop after the first (works for many entries). */
+const SCRUB_VH_PER_STEP = 75;
+/** Extra runway after the last stop so sticky releases into Skills without a jump. */
+const RELEASE_BUFFER_VH = 20;
 
 function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value));
@@ -30,127 +35,161 @@ function nearestIndex(progress: number, count: number) {
   return Math.round(clamp(progress, 0, 1) * (count - 1));
 }
 
+function prefersReducedMotion() {
+  return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+}
+
+/** Linear raw sticky progress → stop progress, holding the last stop before release. */
+function scrubProgress(raw: number) {
+  if (raw <= HOLD_END) return raw / HOLD_END;
+  return 1;
+}
+
 export function Experience() {
   const count = experience.length;
-  const surfaceRef = useRef<HTMLDivElement>(null);
-  const snapTimer = useRef(0);
-  const drag = useRef<{
-    pointerId: number;
-    startX: number;
-    startProgress: number;
-    moved: boolean;
-  } | null>(null);
+  const runwayRef = useRef<HTMLDivElement>(null);
+  const pinRef = useRef<HTMLDivElement>(null);
+  const panelStackRef = useRef<HTMLDivElement>(null);
+  const frameRef = useRef(0);
+  /** Locked scrub pixels so mobile chrome show/hide doesn't resize the runway mid-scroll. */
+  const scrubPxRef = useRef<number | null>(null);
+  const pinBaseRef = useRef(0);
 
   const [progress, setProgress] = useState(0);
-  const [dragging, setDragging] = useState(false);
-  const [live, setLive] = useState(false);
+  const [runwayHeight, setRunwayHeight] = useState<number | null>(null);
+  const [panelStackHeight, setPanelStackHeight] = useState<number | null>(null);
 
   const activeIndex = nearestIndex(progress, count);
-  const instant = dragging || live;
   const liveIndex = experience.findIndex((item) => item.live);
   const parkedAtLive =
     liveIndex >= 0 &&
-    !dragging &&
-    !live &&
     Math.abs(progress - progressForIndex(liveIndex, count)) < 0.08;
-  const markMotion = instant
-    ? "none"
-    : "0.7s cubic-bezier(0.16, 1, 0.3, 1)";
   const nowLogo = experience[0];
   const thenLogo = experience[1];
 
-  const snapTo = useCallback(
-    (index: number) => {
-      window.clearTimeout(snapTimer.current);
-      setLive(false);
-      setDragging(false);
-      setProgress(progressForIndex(index, count));
+  const ensureScrubPx = useCallback(
+    (force = false) => {
+      if (!force && scrubPxRef.current != null) return scrubPxRef.current;
+      const vh = window.innerHeight;
+      scrubPxRef.current =
+        Math.max(1, count - 1) * ((SCRUB_VH_PER_STEP / 100) * vh) +
+        (RELEASE_BUFFER_VH / 100) * vh;
+      return scrubPxRef.current;
     },
     [count],
   );
 
-  const scheduleSnap = useCallback(() => {
-    window.clearTimeout(snapTimer.current);
-    snapTimer.current = window.setTimeout(() => {
-      setLive(false);
-      setProgress((current) =>
-        progressForIndex(nearestIndex(current, count), count),
-      );
-    }, SNAP_MS);
-  }, [count]);
+  const measureLayout = useCallback(
+    (opts?: { resetScrub?: boolean }) => {
+      const pin = pinRef.current;
+      const stack = panelStackRef.current;
+      if (!pin || !stack) return;
+
+      // Measure every panel while visible to size a stable stack height.
+      const articles = stack.querySelectorAll<HTMLElement>("[data-journey-panel]");
+      let maxPanel = 0;
+      articles.forEach((article) => {
+        maxPanel = Math.max(maxPanel, article.scrollHeight);
+      });
+      if (maxPanel > 0) {
+        setPanelStackHeight((prev) =>
+          prev == null ? maxPanel : Math.max(prev, maxPanel),
+        );
+      }
+
+      // Never shrink the pin base mid-scrub — only grow if content needs it.
+      pinBaseRef.current = Math.max(pinBaseRef.current, pin.offsetHeight);
+      const scrub = ensureScrubPx(opts?.resetScrub);
+      setRunwayHeight(pinBaseRef.current + scrub);
+    },
+    [ensureScrubPx],
+  );
+
+  useLayoutEffect(() => {
+    measureLayout({ resetScrub: true });
+
+    const onOrientation = () => {
+      pinBaseRef.current = 0;
+      scrubPxRef.current = null;
+      setPanelStackHeight(null);
+      measureLayout({ resetScrub: true });
+    };
+
+    window.addEventListener("orientationchange", onOrientation);
+    return () => window.removeEventListener("orientationchange", onOrientation);
+  }, [measureLayout]);
+
+  // After the panel stack gets a real height, re-lock the runway to the taller pin.
+  useLayoutEffect(() => {
+    if (panelStackHeight == null) return;
+    const pin = pinRef.current;
+    if (!pin) return;
+    pinBaseRef.current = Math.max(pinBaseRef.current, pin.offsetHeight);
+    setRunwayHeight(pinBaseRef.current + ensureScrubPx());
+  }, [panelStackHeight, ensureScrubPx]);
+
+  const scrubRange = useCallback(() => {
+    const runway = runwayRef.current;
+    const pin = pinRef.current;
+    if (!runway || !pin) return 1;
+    return Math.max(1, runway.offsetHeight - pin.offsetHeight);
+  }, []);
+
+  const readProgress = useCallback(() => {
+    const runway = runwayRef.current;
+    if (!runway) return 0;
+
+    const rect = runway.getBoundingClientRect();
+    const range = scrubRange();
+    const raw = clamp((STICKY_TOP_PX - rect.top) / range, 0, 1);
+    return scrubProgress(raw);
+  }, [scrubRange]);
+
+  const syncProgress = useCallback(() => {
+    setProgress(readProgress());
+  }, [readProgress]);
 
   useEffect(() => {
-    const surface = surfaceRef.current;
-    if (!surface) return;
-
-    const onWheel = (event: WheelEvent) => {
-      const isHorizontal =
-        Math.abs(event.deltaX) > 4 &&
-        Math.abs(event.deltaX) > Math.abs(event.deltaY) * 1.25;
-      if (!isHorizontal) return;
-
-      event.preventDefault();
-      setLive(true);
-      setProgress((current) =>
-        clamp(current + event.deltaX / WHEEL_SCALE, 0, 1),
-      );
-      scheduleSnap();
+    const onScroll = () => {
+      cancelAnimationFrame(frameRef.current);
+      frameRef.current = requestAnimationFrame(syncProgress);
     };
 
-    surface.addEventListener("wheel", onWheel, { passive: false });
+    syncProgress();
+    window.addEventListener("scroll", onScroll, { passive: true });
     return () => {
-      surface.removeEventListener("wheel", onWheel);
-      window.clearTimeout(snapTimer.current);
+      cancelAnimationFrame(frameRef.current);
+      window.removeEventListener("scroll", onScroll);
     };
-  }, [scheduleSnap]);
+  }, [syncProgress]);
 
-  const onPointerDown = (event: PointerEvent<HTMLDivElement>) => {
-    if (event.button !== 0) return;
-    const target = event.target as HTMLElement;
-    if (target.closest("button")) return;
-    if (!target.closest("[data-journey-rail]")) return;
+  const scrollToIndex = useCallback(
+    (index: number) => {
+      const runway = runwayRef.current;
+      if (!runway) return;
 
-    drag.current = {
-      pointerId: event.pointerId,
-      startX: event.clientX,
-      startProgress: progress,
-      moved: false,
-    };
-    surfaceRef.current?.setPointerCapture(event.pointerId);
-    setDragging(true);
-    window.clearTimeout(snapTimer.current);
-  };
+      const rect = runway.getBoundingClientRect();
+      const absoluteTop = window.scrollY + rect.top;
+      const range = scrubRange();
+      const targetRaw = progressForIndex(index, count) * HOLD_END;
+      const target = absoluteTop - STICKY_TOP_PX + targetRaw * range;
 
-  const onPointerMove = (event: PointerEvent<HTMLDivElement>) => {
-    const session = drag.current;
-    if (!session || session.pointerId !== event.pointerId) return;
-
-    const width = surfaceRef.current?.clientWidth ?? 1;
-    const delta = session.startX - event.clientX;
-    if (Math.abs(delta) > 6) session.moved = true;
-    setProgress(clamp(session.startProgress + delta / width, 0, 1));
-  };
-
-  const endDrag = (event: PointerEvent<HTMLDivElement>) => {
-    const session = drag.current;
-    if (!session || session.pointerId !== event.pointerId) return;
-    drag.current = null;
-    setDragging(false);
-    if (session.moved) {
-      setProgress((current) =>
-        progressForIndex(nearestIndex(current, count), count),
-      );
-    }
-  };
+      window.scrollTo({
+        top: target,
+        behavior: prefersReducedMotion() ? "auto" : "smooth",
+      });
+    },
+    [count, scrubRange],
+  );
 
   const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
     if (event.key === "ArrowRight") {
       event.preventDefault();
-      snapTo(Math.min(count - 1, activeIndex + 1));
+      scrollToIndex(Math.min(count - 1, activeIndex + 1));
     }
     if (event.key === "ArrowLeft") {
       event.preventDefault();
-      snapTo(Math.max(0, activeIndex - 1));
+      scrollToIndex(Math.max(0, activeIndex - 1));
     }
   };
 
@@ -162,19 +201,18 @@ export function Experience() {
         subtitle={experienceSection.subheading}
       />
 
-      <Reveal>
+      <div
+        ref={runwayRef}
+        className="relative"
+        style={runwayHeight ? { height: runwayHeight } : undefined}
+      >
         <div
-          ref={surfaceRef}
-          className="journey-track outline-none"
-          onPointerDown={onPointerDown}
-          onPointerMove={onPointerMove}
-          onPointerUp={endDrag}
-          onPointerCancel={endDrag}
+          ref={pinRef}
+          className="journey-track sticky top-20 outline-none"
           onKeyDown={onKeyDown}
           tabIndex={0}
-          aria-label="Career journey. Use left and right arrows, or swipe, to move between now and earlier."
+          aria-label="Career journey. Scroll to move between now and earlier, or use the stops and arrow keys."
         >
-          <div data-journey-rail>
           <div
             className="relative h-20 overflow-visible"
             role="tablist"
@@ -185,21 +223,20 @@ export function Experience() {
               aria-hidden
             />
             <div
-              className="absolute top-1/2 left-1.5 h-px -translate-y-1/2 bg-primary"
+              className="journey-progress-line absolute top-1/2 left-1.5 h-px origin-left bg-primary"
               style={{
-                width: `calc((100% - 0.75rem) * ${progress})`,
-                transition: instant ? "none" : `width ${markMotion}`,
+                width: "calc(100% - 0.75rem)",
+                transform: `translateY(-50%) scaleX(${progress})`,
               }}
               aria-hidden
             />
             <div
               className={cn(
-                "journey-mark pointer-events-none absolute top-1/2 z-20 size-12",
+                "journey-mark pointer-events-none absolute top-1/2 z-20 size-12 will-change-transform",
                 parkedAtLive && "journey-mark-play journey-pulse",
               )}
               style={{
                 left: `calc(0.375rem + (100% - 0.75rem) * ${progress})`,
-                transition: instant ? "none" : `left ${markMotion}`,
               }}
               aria-hidden
             >
@@ -213,9 +250,6 @@ export function Experience() {
                     style={{
                       opacity: 1 - progress,
                       transform: `scale(${1.06 - progress * 0.28})`,
-                      transition: instant
-                        ? "none"
-                        : `opacity ${markMotion}, transform ${markMotion}`,
                     }}
                   />
                 ) : null}
@@ -228,9 +262,6 @@ export function Experience() {
                     style={{
                       opacity: progress,
                       transform: `scale(${0.86 + progress * 0.14})`,
-                      transition: instant
-                        ? "none"
-                        : `opacity ${markMotion}, transform ${markMotion}`,
                     }}
                   />
                 ) : null}
@@ -248,7 +279,7 @@ export function Experience() {
                   aria-selected={selected}
                   aria-controls={`journey-panel-${item.id}`}
                   id={`journey-tab-${item.id}`}
-                  onClick={() => snapTo(index)}
+                  onClick={() => scrollToIndex(index)}
                   className="absolute top-1/2 z-10 size-8 -translate-x-1/2 -translate-y-1/2"
                   style={{
                     left: `calc(0.375rem + (100% - 0.75rem) * ${progressForIndex(index, count)})`,
@@ -277,7 +308,7 @@ export function Experience() {
                 <button
                   key={`${item.id}-label`}
                   type="button"
-                  onClick={() => snapTo(index)}
+                  onClick={() => scrollToIndex(index)}
                   className={cn(
                     "max-w-[45%] text-left transition-colors",
                     index === count - 1 && "text-right",
@@ -294,23 +325,27 @@ export function Experience() {
               );
             })}
           </div>
-          </div>
 
-          <div className="relative mt-8 min-h-[17rem]">
+          <div
+            ref={panelStackRef}
+            className="relative mt-8"
+            style={panelStackHeight ? { height: panelStackHeight } : undefined}
+          >
             {experience.map((item, index) => {
               const selected = index === activeIndex;
               return (
                 <article
                   key={item.id}
+                  data-journey-panel
                   id={`journey-panel-${item.id}`}
                   role="tabpanel"
                   aria-labelledby={`journey-tab-${item.id}`}
                   aria-hidden={!selected}
                   className={cn(
-                    "max-w-3xl transition-opacity duration-700 ease-out",
+                    "absolute inset-x-0 top-0 max-w-3xl transition-opacity duration-500 ease-out",
                     selected
-                      ? "relative opacity-100"
-                      : "pointer-events-none absolute inset-0 opacity-0",
+                      ? "opacity-100"
+                      : "pointer-events-none opacity-0",
                   )}
                 >
                   <p className="text-xs uppercase tracking-[0.15em] text-primary">
@@ -352,7 +387,7 @@ export function Experience() {
             })}
           </div>
         </div>
-      </Reveal>
+      </div>
     </Section>
   );
 }

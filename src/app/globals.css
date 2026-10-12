@@ -191,16 +191,7 @@
   }
 
   .journey-track {
-    touch-action: pan-y;
     overflow: visible;
-  }
-
-  .journey-track [data-journey-rail] {
-    cursor: grab;
-  }
-
-  .journey-track [data-journey-rail]:active {
-    cursor: grabbing;
   }
 
   .journey-track [role="tablist"],
